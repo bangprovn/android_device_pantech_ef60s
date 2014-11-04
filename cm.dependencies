@@ -1,0 +1,26 @@
+[
+ {
+    "repository": "android_hardware_qcom_display-caf-new",
+    "target_path": "hardware/qcom/display-caf-new"
+  },
+  {
+    "repository": "android_hardware_qcom_media-caf-new",
+    "target_path": "hardware/qcom/media-caf-new"
+  },
+  {
+    "repository": "android_device_qcom_common",
+    "target_path": "device/qcom/common"
+  },
+  {
+    "repository": "hoalamha/android_device_pantech_msm8974-common",
+    "target_path": "device/pantech/msm8974-common"
+  },
+  {
+    "repository": "hoalamha/android_vendor_pantech_ef60s",
+    "target_path": "vendor/pantech/ef60s"
+  },
+  {
+    "repository": "hoalamha/android_kernel_pantech_msm8974",
+    "target_path": "kernel/pantech/msm8974"
+  }
+]
