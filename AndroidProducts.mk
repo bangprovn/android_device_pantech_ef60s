@@ -15,4 +15,4 @@
 #
 
 PRODUCT_MAKEFILES := \
-    $(LOCAL_DIR)/omni_ef60s.mk
+    $(LOCAL_DIR)/full_ef60s.mk

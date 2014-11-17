@@ -935,7 +935,6 @@ service pan_log /system/bin/pan_log
     oneshot
 # FEATURE_PANTECH_WLAN_DEBUG_LEVEL_FRAMEWORK 20121022 thkim_wifi add for wifi log <--  
 
-on property:ro.build.user=syhost
     start qcom-sh
 
 on property:sys.boot_completed=1

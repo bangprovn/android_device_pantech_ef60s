@@ -24,19 +24,9 @@ DEVICE_PACKAGE_OVERLAYS += device/pantech/ef60s/overlay
 PRODUCT_AAPT_CONFIG := normal hdpi xhdpi xxhdpi
 PRODUCT_AAPT_PREF_CONFIG := xxhdpi
 
-# Recovery allowed devices
-TARGET_OTA_ASSERT_DEVICE := A900L,A900S,A900K,IM-A900L,IM-A900K,IM-A900S,ef60s,ef61k,ef62l
-
-ifneq ($(TARGET_PREBUILT_KERNEL),)
-	PRODUCT_COPY_FILES += \
-    $(TARGET_PREBUILT_KERNEL):kernel \
-    $(LOCAL_PATH)/dt.img:dt.img
-endif
-
-
 # Ramdisk
 PRODUCT_COPY_FILES += \
-	$(LOCAL_PATH)/ramdisk/twrp.fstab:root/twrp.fstab \
+	$(LOCAL_PATH)/ramdisk/fstab.qcom:root/fstab.qcom \
 	$(LOCAL_PATH)/ramdisk/init.qcom.rc:root/init.qcom.rc \
 	$(LOCAL_PATH)/ramdisk/init.qcom.sh:root/init.qcom.sh \
 	$(LOCAL_PATH)/ramdisk/init.target.rc:root/init.target.rc \

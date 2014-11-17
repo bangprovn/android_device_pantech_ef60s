@@ -53,21 +53,14 @@ BOARD_SYSTEMIMAGE_PARTITION_SIZE 	:= 2566914048	#2.5G system
 BOARD_USERDATAIMAGE_PARTITION_SIZE 	:= 11757140992	#11G data
 BOARD_FLASH_BLOCK_SIZE 				:= 131072
 
-#TARGET_PREBUILT_KERNEL := device/pantech/ef60s/kernel
-
 BOARD_KERNEL_SEPARATED_DT := true
-
-ifneq ($(TARGET_PREBUILT_KERNEL),)
-BOARD_CUSTOM_BOOTIMG_MK := device/pantech/ef60s/mkbootimg_twrp.mk
-else
-TARGET_KERNEL_SOURCE := kernel/pantech/sayanogen
-TARGET_KERNEL_CONFIG := msm8974_ef60s_tp20_eng_defconfig
-
+TARGET_KERNEL_SOURCE := kernel/pantech/msm8974
+TARGET_KERNEL_CONFIG := cm_ef60s_tp20_user_defconfig
 PANTECH_BOARD_VERSION := tp20
-
 BOARD_CUSTOM_BOOTIMG_MK := device/pantech/ef60s/mkbootimg.mk
 
-endif
+# Recovery allowed devices
+TARGET_OTA_ASSERT_DEVICE := A900L,A900S,A900K,IM-A900L,IM-A900K,IM-A900S,ef60s,ef61k,ef62l
 
 #TARGET_KERNEL_CUSTOM_TOOLCHAIN:= linaro-4.8
 
