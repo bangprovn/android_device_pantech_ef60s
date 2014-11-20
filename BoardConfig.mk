@@ -62,8 +62,6 @@ BOARD_CUSTOM_BOOTIMG_MK := device/pantech/ef60s/mkbootimg.mk
 # Recovery allowed devices
 TARGET_OTA_ASSERT_DEVICE := A900L,A900S,A900K,IM-A900L,IM-A900K,IM-A900S,ef60s,ef61k,ef62l
 
-#TARGET_KERNEL_CUSTOM_TOOLCHAIN:= linaro-4.8
-
 #RIL
 BOARD_RIL_CLASS := ../../../device/pantech/ef60s/ril/
 
@@ -75,8 +73,6 @@ BOARD_BLUETOOTH_BDROID_BUILDCFG_INCLUDE_DIR := device/pantech/ef60s/bluetooth
 BOARD_BLUEDROID_VENDOR_CONF := device/pantech/ef60s/bluetooth/libbt_vndcfg.txt
 
 # Vendor Init
-#TARGET_UNIFIED_DEVICE := true
-#TARGET_INIT_VENDOR_LIB := libinit_msm
 TARGET_LIBINIT_DEFINES_FILE := device/pantech/ef60s/init/init_ef60s.c
 
 #BOARD_VOLD_EMMC_SHARES_DEV_MAJOR := true

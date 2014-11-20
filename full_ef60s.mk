@@ -26,7 +26,7 @@ $(call inherit-product, device/pantech/ef60s/device.mk)
 PRODUCT_DEVICE := ef60s
 PRODUCT_NAME := full_ef60s
 PRODUCT_BRAND := VEGA
-PRODUCT_MODEL := IM-A900L
+PRODUCT_MODEL := IM-A900S
 PRODUCT_MANUFACTURER := pantech
 PRODUCT_RESTRICT_VENDOR_FILES := false
 

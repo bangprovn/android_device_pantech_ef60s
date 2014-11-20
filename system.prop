@@ -41,11 +41,6 @@ persist.cne.feature=4
 persist.sys.cnd.nsrm=2
 #endif
 
-#ifdef FEATURE_SKY_DS_NO_SERVICE_BUG_FIX
-persist.telephony.oosisdc=false
-#endif FEATURE_SKY_DS_NO_SERVICE_BUG_FIX
-
-
 #system props for the MM modules
 
 media.stagefright.enable-player=true
@@ -78,42 +73,11 @@ ro.data.large_tcp_window_size=true
 #system props for time-services
 persist.timed.enable=true
 
-# property to force camera shutter sound on speaker. see AudioPolicyManagerBase [FEATURE_PANTECH_SND]
-ro.camera.sound.forced=0
-
-# property to set/get voip input count [FEATURE_PANTECH_SND_VOLTE]
-persist.sys.voip_input_cnt=0
-
-# property to set/get VoLTE incall Recording [FEATURE_PANTECH_SND_VOLTE]
-volte.recording=false
-
-# property to set/get VolTE EQ [FEATURE_PANTECH_SND_VOLTE_EQ]
-persist.sys.volte_clean_eq=false
-persist.sys.volte_soft_eq=false
-
-# property to set/get HEADSET bootup sound volume control [FEATURE_PANTECH_SND_BOOT_SOUND]
-persist.sys.bootup_headset=speaker
-
 # property to set/get NXP SYSTEM LM
 persist.sys.lvm=1
 
 # property to set/get Qsound QXV
 persist.sys.qxv=1
-
-# property to disable offload AV streaming playback by default [FEATURE_PANTECH_SND]
-av.streaming.offload.enable=false
-
-# property to enable tunnel offload [FEATURE_PANTECH_SND]
-audio.offload.disable=0
-
-# property to select offload mode during call [FEATURE_PANTECH_SND]
-audio.callmode.check=0
-
-# property to control tunnel offload for flac 24bit down sampling [FEATURE_PANTECH_SND]
-audio.offload.flac.disable=0
-
-# property to control tunnel offload for WFD connection [FEATURE_PANTECH_WFD_ENABLED]
-WFD.IsEnabled=false
 
 #
 # system prop for opengles version
@@ -143,75 +107,8 @@ persist.fuse_sdcard=true
 #snapdragon value add features
 #
 ro.qc.sdk.audio.ssr=false
-##fluencetype can be "fluence" or "fluencepro" or "none"
-# fluencetype property block(set in init_$model.rc) for support 3rd Party(NXP/QSOUND) DualMic NR of EF63 [FEATURE_PANTECH_SND]
-#ro.qc.sdk.audio.fluencetype=none
-persist.audio.fluence.voicecall=true
-persist.audio.fluence.voicerec=false
-persist.audio.fluence.speaker=true
-
 ro.qc.sdk.sensors.gestures=true
 ro.qc.sdk.gestures.camera=false
 ro.qc.sdk.camera.facialproc=false
 # system prop for NFC DT
 ro.nfc.port=I2C
-#property to enable user to access Google WFD settings.
-persist.debug.wfd.enable=1
-#property to choose between virtual/external wfd display
-persist.sys.wfd.virtual=0
-tunnel.audio.encode = true
-
-#use VERY_HIGH_QUALITY for audio resampler
-af.resampler.quality=4
-
-#Buffer size in kbytes for compress offload playback
-audio.offload.buffer.size.kb=32
-
-#Enable offload audio video playback by default
-# property to disable offload AV local playback(true -> false) [FEATURE_PANTECH_SND]
-av.offload.enable=false
-
-#enable voice path for PCM VoIP by default
-use.voice.path.for.pcm.voip=true
-
-#disable dsp gapless mode by default
-audio.offload.gapless.enabled=false
-
-#ppst
-sys.ppst.srv.SHM=off
-
-# +US3-KGD.COMMON {
-# System properties for VegaLockScreen type
-#
-persist.sky.kg.pref.type=-1
-persist.sky.kg.pref.src=-1
-persist.sky.kg.pref.path=UNSPECIFIED
-# -US3-KGD.COMMON }
-
-# +US3-KGD.SECRET_MODE {
-persist.vega.secretmode=0
-persist.vega.secret_setting=-1
-# -US3-KGD.SECRET_MODE }
-
-# +US3-KGD.KEYGUARD_FADE_LOCKEFFECT {
-persist.kg.pref.transparent=0
-# -US3-KGD.KEYGUARD_FADE_LOCKEFFECT }
-
-# +US3-KGD.MULTIPANEL_WIDGET {
-persist.kg.pref.widget_simple=0
-persist.kg.pref.widget_digital=0
-# -US3-KGD.MULTIPANEL_WIDGET }
-
-# +US3-KU Font Download
-persist.sys.font=0
-persist.sys.supportdloadfont=1
-# -US3-KU Font Download
-#+DS1-Piezo speaker
-persist.vega.piezospeaker=0
-#-DS1-Piezo speaker
-
-
-
-
-
-
