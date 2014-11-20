@@ -2,10 +2,14 @@
 # wifi_log_monitor
 service logmonitor /system/bin/wifi_log_monitor
     class main
-    disabled
-    oneshot
+    #disabled
+    #oneshot
+    user root
+    group root
 
 # wifi_event_server
 service eventserver /system/bin/wifi_event_server
     class main
+    user root
+    group root
     

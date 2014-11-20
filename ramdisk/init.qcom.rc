@@ -25,12 +25,7 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# For pantech usb_manager composite configuration
-# idVendor, idProducr, each function configuration and enable/disable is configured usb_manager.c in pantech framework.
-#import init.qcom.usb.rc
 import init.pantech.usb.rc
-#import init.target.rc
-#FEATURE_PS_WIFI_COM_PREF_LOGGING
 import init.pantech.ps.wifi.rc
 
 on early-init
@@ -39,75 +34,85 @@ on early-init
 on init
     # Set permissions for persist partition
     mkdir /persist 0771 system system
-    # See storage config details at http://source.android.com/tech/storage/
     mkdir /mnt/shell/emulated 0700 shell shell
-    # mkdir /storage 0050 system sdcard_r
     mkdir /storage 0550 system sdcard_r
     mkdir /storage/emulated 0555 root root
-    mkdir /storage/emulated/legacy 0555 root root
-    
+
+    #External storage directories
     mkdir /mnt/media_rw/sdcard1 0700 media_rw media_rw
+    mkdir /storage/usbdisk 0000 system system
     mkdir /mnt/media_rw/usbdisk 0700 media_rw media_rw
-    
+
     mkdir /storage/sdcard1 0700 root root
     mkdir /storage/usbdisk 0700 root root
 
     export EXTERNAL_STORAGE /storage/emulated/legacy
-    export SECONDARY_STORAGE /storage/sdcard1
+    export SECONDARY_STORAGE /storage/sdcard1:/storage/usbdisk
     export EMULATED_STORAGE_SOURCE /mnt/shell/emulated
     export EMULATED_STORAGE_TARGET /storage/emulated
-    export OTG_STORAGE /storage/usbdisk
 
     # Support legacy paths
     symlink /storage/emulated/legacy /sdcard
     symlink /storage/emulated/legacy /mnt/sdcard
     symlink /storage/emulated/legacy /storage/sdcard0
-    
-    symlink /storage/sdcard1 /mnt/sdcard1
-    symlink /storage/sdcard1 /sdcard1
+    symlink /mnt/shell/emulated/0 /storage/emulated/legacy
+    symlink /mnt/shell/container /storage/container
+    symlink /storage/sdcard1 /extSdCard
+    symlink /storage/sdcard1 /mnt/extSdCard
+    symlink /storage/sdcard1 /external_sd
     symlink /storage/usbdisk /usbdisk
     symlink /storage/usbdisk /mnt/usbdisk
 
 on early-boot
     # set RLIMIT_MEMLOCK to 64MB
     setrlimit 8 67108864 67108864
+
+    # SKY LCD
+	chown system system /sys/class/graphics/fb0/cabc_ctl
+	chmod 0664 /sys/class/graphics/fb0/cabc_ctl
+	chown system system /sys/class/graphics/fb0/sharpness_ctl
+	chmod 0664 /sys/class/graphics/fb0/sharpness_ctl
+	chown radio system /sys/class/graphics/fb0/back_ctl
+	chmod 0664 /sys/class/graphics/fb0/back_ctl
+
     # Allow subsystem (modem etc) debugging
     write /sys/module/subsystem_restart/parameters/enable_debug ${persist.sys.ssr.enable_debug}
     write /sys/kernel/boot_adsp/boot 1
-    
+    exec /system/bin/sh /init.qcom.early_boot.sh ${ro.board.platform}
+    exec /system/bin/sh /init.qcom.syspart_fixup.sh ${ro.board.platform} ${ro.serialno}
     exec /system/bin/sh /system/etc/init.qcom.wifi.sh
 
 on boot
+
+    mount debugfs /sys/kernel/debug /sys/kernel/debug
+
     setprop persist.service.btcmd "0"
     setprop ro.bt.bdaddr_path "/persist/.bt_nv.bin"
     chown bluetooth bluetooth ro.bt.bdaddr_path
-    chown bluetooth net_bt_stack /sys/module/bluetooth_power/parameters/power
-    chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/type
-    chown bluetooth net_bt_stack /sys/class/rfkill/rfkill0/state
-    chown bluetooth net_bt_stack /proc/bluetooth/sleep/proto
-    chown bluetooth net_bt_stack /sys/module/hci_uart/parameters/ath_lpm
-    chown bluetooth net_bt_stack /sys/module/hci_uart/parameters/ath_btwrite
+    chown bluetooth bluetooth /sys/module/bluetooth_power/parameters/power
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chown bluetooth bluetooth /proc/bluetooth/sleep/proto
+    chown bluetooth bluetooth /sys/module/hci_uart/parameters/ath_lpm
+    chown bluetooth bluetooth /sys/module/hci_uart/parameters/ath_btwrite
     chown system system /sys/module/sco/parameters/disable_esco
-    chown bluetooth net_bt_stack /sys/module/hci_smd/parameters/hcismd_set
+    chown bluetooth bluetooth /sys/module/hci_smd/parameters/hcismd_set
     chmod 0660 /sys/module/bluetooth_power/parameters/power
     chmod 0660 /sys/module/hci_smd/parameters/hcismd_set
     chmod 0660 /sys/class/rfkill/rfkill0/state
     chmod 0660 /proc/bluetooth/sleep/proto
-
     chown bluetooth net_bt_stack /dev/ttyHS0
     chmod 0660 /sys/module/hci_uart/parameters/ath_lpm
     chmod 0660 /sys/module/hci_uart/parameters/ath_btwrite
     chmod 0660 /dev/ttyHS0
-    chown bluetooth net_bt_stack /sys/devices/platform/msm_serial_hs.0/clock
+    chown bluetooth bluetooth /sys/devices/platform/msm_serial_hs.0/clock
     chmod 0660 /sys/devices/platform/msm_serial_hs.0/clock
 
     chmod 0660 /dev/ttyHS2
     chown bluetooth bluetooth /dev/ttyHS2
 
     #Create QMUX deamon socket area
-    # [FEATURE_LGU_CP_UICC_SUPPORT_NFC]
-    #mkdir /dev/socket/qmux_radio 0770 radio radio
-    mkdir /dev/socket/qmux_radio 0770 radio system
+    mkdir /dev/socket/qmux_radio 0770 radio radio
     chmod 2770 /dev/socket/qmux_radio
     mkdir /dev/socket/qmux_audio 0770 media audio
     chmod 2770 /dev/socket/qmux_audio
@@ -115,215 +120,21 @@ on boot
     chmod 2770 /dev/socket/qmux_bluetooth
     mkdir /dev/socket/qmux_gps 0770 gps gps
     chmod 2770 /dev/socket/qmux_gps
-    
-    
- # set SKY-LCD density to 480dpi  [LS2-LCD]
-	setprop ro.sf.lcd_density 480	
-	chown system system /sys/class/graphics/fb0/cabc_ctl
-	chmod 0664 /sys/class/graphics/fb0/cabc_ctl
-	chown system system /sys/class/graphics/fb0/sharpness_ctl
-	chmod 0664 /sys/class/graphics/fb0/sharpness_ctl
-	chown radio system /sys/class/graphics/fb0/back_ctl
-	chmod 0664 /sys/class/graphics/fb0/back_ctl
-	
-# for preload partition
-    mkdir /preload 0771 system system
-    mkdir /preload/Tmap4 0771 system system
-	
-# Touch P13106
-	chmod 0660 /dev/touch_monitor
-	chown system radio /dev/touch_monitor
 
-	chmod 0660 /dev/touch_fops
-	chown system radio /dev/touch_fops 
-
-# GPIO_KEYS // P16088
-	chmod 0660 /dev/gpio_keys_dev
-  chown system radio /dev/gpio_keys_dev
-
-# LED_LP5523
-  chmod 0660 /dev/led_fops
-  chown system radio /dev/led_fops
-
-# FEATURE_PANTECH_PMIC_MONITOR_TEST
-  chmod 0660 /dev/qcom,qpnp-charger
-  chown system radio /dev/qcom,qpnp-charger
-  
-#FP_SENSOR //p11774
-	chmod 0660 /dev/fpc1080
-# Memory management.  Basic kernel parameters, and allow the high
-# level system server to be able to adjust the kernel OOM driver
-# parameters to match how it is managing things.
-    write /proc/sys/vm/overcommit_memory 1
-    write /proc/sys/vm/min_free_order_shift 4
-    chown root system /sys/module/lowmemorykiller/parameters/adj
-    chmod 0664 /sys/module/lowmemorykiller/parameters/adj
-    chown root system /sys/module/lowmemorykiller/parameters/minfree
-    chmod 0664 /sys/module/lowmemorykiller/parameters/minfree
-
-    # Tweak background writeout
-    write /proc/sys/vm/dirty_expire_centisecs 200
-    write /proc/sys/vm/dirty_background_ratio  5
-
-    # Permissions for System Server and daemons.
-    chown radio system /sys/android_power/state
-    chown radio system /sys/android_power/request_state
-    chown radio system /sys/android_power/acquire_full_wake_lock
-    chown radio system /sys/android_power/acquire_partial_wake_lock
-    chown radio system /sys/android_power/release_wake_lock
-    chown system system /sys/power/autosleep
-    chown system system /sys/power/state
-    chown system system /sys/power/wakeup_count
-    chown radio system /sys/power/wake_lock
-    chown radio system /sys/power/wake_unlock
-    chmod 0660 /sys/power/state
-    chmod 0660 /sys/power/wake_lock
-    chmod 0660 /sys/power/wake_unlock
-
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/timer_rate
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/timer_rate
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/timer_slack
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/timer_slack
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/min_sample_time
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/min_sample_time
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/hispeed_freq
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/target_loads
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/target_loads
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/go_hispeed_load
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/above_hispeed_delay
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/boost
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/boost
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/boostpulse
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/input_boost
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/input_boost
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/boostpulse_duration
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/boostpulse_duration
-    chown system system /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
-    chmod 0660 /sys/devices/system/cpu/cpufreq/interactive/io_is_busy
-
-    # Assume SMP uses shared cpufreq policy for all CPUs
-    chown system system /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-    chmod 0660 /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-
-    chown system system /sys/class/timed_output/vibrator/enable
-    chown system system /sys/class/timed_output/vibrator/vtg_level
-    chown system system /sys/class/leds/keyboard-backlight/brightness
-    chown system system /sys/class/leds/lcd-backlight/brightness
-    chown system system /sys/class/leds/button-backlight/brightness
-    chown system system /sys/class/leds/jogball-backlight/brightness
-    chown system system /sys/class/leds/red/brightness
-    chown system system /sys/class/leds/green/brightness
-    chown system system /sys/class/leds/blue/brightness
-    chown system system /sys/class/leds/red/device/grpfreq
-    chown system system /sys/class/leds/red/device/grppwm
-    chown system system /sys/class/leds/red/device/blink
-    
-    chmod 0666 /sys/class/timed_output/vibrator/enable
-    chmod 0666 /sys/class/timed_output/vibrator/vtg_level
-    chmod 0666 /sys/class/leds/lp5523:channel0/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel1/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel2/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel3/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel4/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel5/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel6/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel7/brightness
-    chmod 0666 /sys/class/leds/lp5523:channel8/brightness
-    
-    chown system radio /sys/class/leds/lp5523:channel0/brightness
-    chown system radio /sys/class/leds/lp5523:channel1/brightness
-    chown system radio /sys/class/leds/lp5523:channel2/brightness
-    chown system radio /sys/class/leds/lp5523:channel3/brightness
-    chown system radio /sys/class/leds/lp5523:channel4/brightness
-    chown system radio /sys/class/leds/lp5523:channel5/brightness
-    chown system radio /sys/class/leds/lp5523:channel6/brightness
-    chown system radio /sys/class/leds/lp5523:channel7/brightness
-    chown system radio /sys/class/leds/lp5523:channel8/brightness
-    
-    chown system system /sys/module/sco/parameters/disable_esco
-    chown system system /sys/kernel/ipv4/tcp_wmem_min
-    chown system system /sys/kernel/ipv4/tcp_wmem_def
-    chown system system /sys/kernel/ipv4/tcp_wmem_max
-    chown system system /sys/kernel/ipv4/tcp_rmem_min
-    chown system system /sys/kernel/ipv4/tcp_rmem_def
-    chown system system /sys/kernel/ipv4/tcp_rmem_max
-    chown root radio /proc/cmdline
-
-#for FingerPrintSensor p11774
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/btp_input_mode
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_ptr
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_y
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_key_clear
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_start
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_key_accel
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll_skip_frame
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_x
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_accel
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_accel
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_dispatch
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_enable
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_key
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_start
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_ptr_clear
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_ptr_accel
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/pxl_setup
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/offset
-    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/gain
-
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/btp_input_mode
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_ptr
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_y
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_key_clear
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_start
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_key_accel
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll_skip_frame
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_x
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_accel
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_accel
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_dispatch
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_enable
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_key
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_start
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_ptr_clear
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_ptr_accel
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/pxl_setup
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/offset
-    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/gain
-    
-# made for common pantech folder [FEATURE_LGU_CP_UICC_SUPPORT_NFC]
-     mkdir /dev/pantech 
-     chown system system /dev/pantech
-     
-# FEATURE_LGU_CP_LTE_ANDSF_CELLID:  On boot, initialize LTE Cell ID and TAC for ANDSF
-	setprop ril.lte.cellid "-1"
-	setprop ril.lte.tac "-1"
+    # On boot, initialize LTE Cell ID and TAC for ANDSF
+    setprop ril.lte.cellid "-1"
+    setprop ril.lte.tac "-1"
 
     setprop wifi.interface wlan0
-
-#   Define TCP buffer sizes for various networks
-#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
-    setprop net.tcp.buffersize.wifi    524288,2097152,4194304,262144,524288,1048576
-
 
     setprop ro.telephony.call_ring.multiple false
 
     #Set SUID bit for usbhub
-# LS4 USB[+]
-# usbhub must not have super user permission. It causes fail for CTS test.
-# Also we do not use usbhub in MSM8974
-    #chmod 4755 /system/bin/usbhub
-    chmod 0755 /system/bin/usbhub
-# LS4 USB[-]    
+    chmod 4755 /system/bin/usbhub
     chmod 755 /system/bin/usbhub_init
 
     #Remove SUID bit for iproute2 ip tool
     chmod 0755 /system/bin/ip
-
 
     chmod 0444 /sys/devices/platform/msm_hsusb/gadget/usb_state
 
@@ -332,12 +143,12 @@ on boot
 
 #   Define TCP buffer sizes for various networks
 #   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
+    setprop net.tcp.buffersize.wifi    524288,2097152,4194304,262144,524288,1048576
+
+#   Define TCP buffer sizes for various networks
+#   ReadMin, ReadInitial, ReadMax, WriteMin, WriteInitial, WriteMax,
     setprop net.tcp.buffersize.default 4096,87380,110208,4096,16384,110208
-#ifdef FEATURE_SKT_DS_LTE_TCP_BUFFER_CHANGE
-    # Block original
-    # setprop net.tcp.buffersize.lte     524288,1048576,2097152,262144,524288,1048576 
-    setprop net.tcp.buffersize.lte     524288,1048576,2560000,524288,1048576,2560000
-#endif FEATURE_SKT_DS_LTE_TCP_BUFFER_CHANGE
+    setprop net.tcp.buffersize.lte     524288,1048576,5191630,262144,524288,2595815
     setprop net.tcp.buffersize.umts    4094,87380,110208,4096,16384,110208
     setprop net.tcp.buffersize.hspa    4094,87380,1220608,4096,16384,1220608
     setprop net.tcp.buffersize.hsupa   4094,87380,1220608,4096,16384,1220608
@@ -349,13 +160,8 @@ on boot
 
 #   Assign TCP buffer thresholds to be ceiling value of technology maximums
 #   Increased technology maximums should be reflected here.
-#ifdef FEATURE_SKT_DS_LTE_TCP_BUFFER_CHANGE
-    # Block original
-    # write /proc/sys/net/core/rmem_max  2097152
-    # write /proc/sys/net/core/wmem_max  2097152
-    write /proc/sys/net/core/rmem_max  2560000
-    write /proc/sys/net/core/wmem_max  2560000
-#endif FEATURE_SKT_DS_LTE_TCP_BUFFER_CHANGE   
+    write /proc/sys/net/core/rmem_max  5191630
+    write /proc/sys/net/core/wmem_max  5191630
 
     #To allow interfaces to get v6 address when tethering is enabled
     write /proc/sys/net/ipv6/conf/rmnet0/accept_ra 2
@@ -387,22 +193,19 @@ on boot
     # an ack packet comes out of order
     write /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal 1
 
-    # NFC local data and nfcee xml storage
-    mkdir /data/nfc 0770 nfc nfc
-    mkdir /data/nfc/param 0770 nfc nfc
-
-    # Set the console loglevel to < KERN_INFO
-    # Set the default message loglevel to KERN_INFO
-    # 20131205 jylee "6 6 1 7" -> "7 7 1 7"
-    #write /proc/sys/kernel/printk "7 7 1 7"
-
 # msm specific files that need to be created on /data
 on post-fs-data
     # we will remap this as /mnt/sdcard with the sdcard fuse tool
     mkdir /data/media 0770 media_rw media_rw
     chown media_rw media_rw /data/media
 
+    # NFC local data and nfcee xml storage
+    mkdir /data/nfc 0770 nfc nfc
+    mkdir /data/nfc/param 0770 nfc nfc
+
     mkdir /data/misc/bluetooth 0770 bluetooth bluetooth
+
+    mkdir /data/radio 0776 radio system
 
     # Create the directories used by the Wireless subsystem
     mkdir /data/misc/wifi 0770 wifi wifi
@@ -416,7 +219,7 @@ on post-fs-data
     rm /data/misc/wifi/WCNSS_qcom_cfg.ini
     rm /data/misc/wifi/WCNSS_qcom_wlan_nv.bin
 
-    # Create the directories used by CnE subsystem
+    # Create the directory used by CnE subsystem
     mkdir /data/connectivity 0771 system system
     chown system system /data/connectivity
 
@@ -425,6 +228,7 @@ on post-fs-data
 
     # Create directory used by audio subsystem
     mkdir /data/misc/audio 0770 audio audio
+    restorecon_recursive /data/misc/audio
 
     # Mounting of persist is moved to 'on emmc-fs' and 'on fs' sections
     # We chown/chmod /persist again so because mount is run as root + defaults
@@ -445,34 +249,15 @@ on post-fs-data
     mkdir /data/system 0775 system system
     #symlink /data/misc/wifi/wpa_supplicant /data/system/wpa_supplicant
 
-# pcu_p11800 [FEATURE_SKT_VE]
-    mkdir /data/ve 0777 radio radio
-    
-    # create directory for DMB
-    mkdir /data/misc/dmb 0771 media media
-    mkdir /data/misc/dmb/content 0771 media media
-    
-    # create directory for Secret Apps
-    mkdir /data/safe_contents 0770 system safebox
-    mkdir /data/safe_contents/Photo 0770 system safebox
-    mkdir /data/safe_contents/Video 0770 system safebox
-    mkdir /data/safe_contents/Voicerec 0770 system safebox
-    mkdir /data/safe_contents/Music 0770 system safebox
-    mkdir /data/safe_contents/V_Note 0770 system safebox
-
-# p12455 - FEATURE_PANTECH_HOPPIN_DRM
-    mkdir /data/playready 0777 media media
-    
-# cpmgr pipe [FEATURE_SKY_CP_MANAGER_DAEMON_INTERFACE]
+# cpmgr pipe
     mkdir /dev/cpmgr
     chown radio radio /dev/cpmgr
-# end cpmgr
 
     #Create directories for gpsone_daemon services
     mkdir /data/misc/gpsone_d 0770 system gps
 
     #Create directories for QuIPS
-    mkdir /data/misc/quipc 0770 gps system
+    mkdir /data/misc/quipc 0770 system gps
 
     #Create directories for Location services
     mkdir /data/misc/location 0770 gps gps
@@ -494,11 +279,13 @@ on post-fs-data
     mkdir /data/time/ 0700 system system
 
     mkdir /data/audio/ 0770 media audio
-
+    # Enable the setgid bit on the directory
+    chmod 2770 /data/audio
     setprop vold.post_fs_data_done 1
 
     #Create a folder for SRS to be able to create a usercfg file
     mkdir /data/data/media 0770 media media
+    restorecon_recursive /data/media
 
 # Export GPIO56 for fusion targets to enable/disable hub
 service usbhub_init /system/bin/usbhub_init
@@ -516,31 +303,6 @@ on property:persist.radio.atfwd.start=false
 on property:init.svc.surfaceflinger=stopped
     stop ppd
     stop hdmid
-
-# corefile limit (p14291_userdump)
-on property:persist.debug.trace=1
-	mkdir /data/core 0777 system system    
-	write /proc/sys/kernel/core_pattern "/data/core/%E.%p.%e"
-
-# corefile limit and ETB enabling
-on property:persist.debug.trace=1
-    mkdir /data/core 0777 root root
-    write /proc/sys/kernel/core_pattern "/data/core/%E.%p.%e"
-    write /sys/devices/system/cpu/cpu1/online 1
-    write /sys/devices/system/cpu/cpu2/online 1
-    write /sys/devices/system/cpu/cpu3/online 1
-    write /sys/bus/coresight/devices/coresight-etm0/enable 0
-    write /sys/bus/coresight/devices/coresight-etm1/enable 0
-    write /sys/bus/coresight/devices/coresight-etm2/enable 0
-    write /sys/bus/coresight/devices/coresight-etm3/enable 0
-    write /sys/bus/coresight/devices/coresight-etm0/reset 1
-    write /sys/bus/coresight/devices/coresight-etm1/reset 1
-    write /sys/bus/coresight/devices/coresight-etm2/reset 1
-    write /sys/bus/coresight/devices/coresight-etm3/reset 1
-    write /sys/bus/coresight/devices/coresight-etm0/enable 1
-    write /sys/bus/coresight/devices/coresight-etm1/enable 1
-    write /sys/bus/coresight/devices/coresight-etm2/enable 1
-    write /sys/bus/coresight/devices/coresight-etm3/enable 1
 
 on property:ro.board.platform=msm7630_fusion
     start usbhub_init
@@ -568,6 +330,7 @@ on property:ro.bluetooth.ftm_enabled=true
     start ftmd
 
 on property:vold.decrypt=trigger_restart_framework
+    setprop ro.fuse_sdcard ${persist.fuse_sdcard}
     start qcom-c_main-sh
     start config_bluetooth
 
@@ -598,6 +361,31 @@ service rfs_access /system/bin/rfs_access
 
 on property:ro.boot.emmc=true
     start rfs_access
+
+# corefile limit (p14291_userdump)
+on property:persist.debug.trace=1
+	mkdir /data/core 0777 system system    
+	write /proc/sys/kernel/core_pattern "/data/core/%E.%p.%e"
+
+# corefile limit and ETB enabling
+on property:persist.debug.trace=1
+    mkdir /data/core 0777 root root
+    write /proc/sys/kernel/core_pattern "/data/core/%E.%p.%e"
+    write /sys/devices/system/cpu/cpu1/online 1
+    write /sys/devices/system/cpu/cpu2/online 1
+    write /sys/devices/system/cpu/cpu3/online 1
+    write /sys/bus/coresight/devices/coresight-etm0/enable 0
+    write /sys/bus/coresight/devices/coresight-etm1/enable 0
+    write /sys/bus/coresight/devices/coresight-etm2/enable 0
+    write /sys/bus/coresight/devices/coresight-etm3/enable 0
+    write /sys/bus/coresight/devices/coresight-etm0/reset 1
+    write /sys/bus/coresight/devices/coresight-etm1/reset 1
+    write /sys/bus/coresight/devices/coresight-etm2/reset 1
+    write /sys/bus/coresight/devices/coresight-etm3/reset 1
+    write /sys/bus/coresight/devices/coresight-etm0/enable 1
+    write /sys/bus/coresight/devices/coresight-etm1/enable 1
+    write /sys/bus/coresight/devices/coresight-etm2/enable 1
+    write /sys/bus/coresight/devices/coresight-etm3/enable 1
 
 on property:bluetooth.start_hci=true
     start start_hci_filter
@@ -679,21 +467,19 @@ service qmiproxy /system/bin/qmiproxy
 service qmuxd /system/bin/qmuxd
     class main
     user radio
-    group radio audio bluetooth gps qcom_diag
+    group radio audio bluetooth gps qcom_diag log
     disabled
 
 service netmgrd /system/bin/netmgrd
     class main
+    user root
+    group radio
     disabled
 
-#CONFIG_PANTECH_SNS_DAEMON_LATE_START  remove disabled option
-#CONFIG_PANTECH_SNS_ENCRYPTION  modify class to main
 service sensors /system/bin/sensors.qcom
-#    class late_start
     class main
     user root
     group root
-#    disabled
 
 on property:ro.use_data_netmgrd=false
     # netmgr not supported on specific target
@@ -729,6 +515,20 @@ service amp_unload /system/bin/amploader -u
     disabled
     oneshot
 
+service wpa_supplicant /system/bin/wpa_supplicant \
+    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
+    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
+    -O/data/misc/wifi/sockets -dddd \
+    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
+    #   we will start as root and wpa_supplicant will switch to user wifi
+    #   after setting up the capabilities required for WEXT
+    #   user wifi
+    #   group wifi inet keystore
+    class main
+    socket wpa_wlan0 dgram 660 wifi wifi
+    disabled
+    oneshot
+
 service p2p_supplicant /system/bin/wpa_supplicant \
     -ip2p0 -Dnl80211 -c/data/misc/wifi/p2p_supplicant.conf \
     -I/system/etc/wifi/p2p_supplicant_overlay.conf -N \
@@ -740,20 +540,6 @@ service p2p_supplicant /system/bin/wpa_supplicant \
 #   after setting up the capabilities required for WEXT
 #   user wifi
 #   group wifi inet keystore
-    class main
-    socket wpa_wlan0 dgram 660 wifi wifi
-    disabled
-    oneshot
-    
-service wpa_supplicant /system/bin/wpa_supplicant \
-    -iwlan0 -Dnl80211 -c/data/misc/wifi/wpa_supplicant.conf \
-    -I/system/etc/wifi/wpa_supplicant_overlay.conf \
-    -O/data/misc/wifi/sockets -dddd \
-    -e/data/misc/wifi/entropy.bin -g@android:wpa_wlan0
-    #   we will start as root and wpa_supplicant will switch to user wifi
-    #   after setting up the capabilities required for WEXT
-    #   user wifi
-    #   group wifi inet keystore
     class main
     socket wpa_wlan0 dgram 660 wifi wifi
     disabled
@@ -825,7 +611,7 @@ service dhcpcd_bnep4 /system/bin/dhcpcd -BKLG
 service gpsone_daemon /system/bin/gpsone_daemon
     class late_start
     user gps
-    group gps inet net_raw
+    group gps qcom_oncrpc inet net_raw
     disabled
 
 service quipc_igsn /system/bin/quipc_igsn
@@ -871,14 +657,6 @@ service fm_dl /system/bin/sh /system/etc/init.qcom.fm.sh
     disabled
     oneshot
 
-on property:crypto.driver.load=1
-     insmod /system/lib/modules/qce.ko
-     insmod /system/lib/modules/qcedev.ko
-
-on property:crypto.driver.load=0
-     exec /system/bin/rmmod qcedev.ko
-     exec /system/bin/rmmod qce.ko
-
 service drmdiag /system/bin/drmdiagapp
     class late_start
      user root
@@ -893,7 +671,7 @@ on property:drmdiag.load=0
 
 # Pantech USB usb_control_manager
 service usb_manager /system/bin/usb_manager
-  class main #FEATURE_SKY_DATA_ENCRYPTION late_start
+  class main
   user root
 
 # pantech server
@@ -935,12 +713,8 @@ service pan_log /system/bin/pan_log
     oneshot
 # FEATURE_PANTECH_WLAN_DEBUG_LEVEL_FRAMEWORK 20121022 thkim_wifi add for wifi log <--  
 
-    start qcom-sh
-
 on property:sys.boot_completed=1
-    start qcom-post-boot  
-    start preinstall
-    
+    start qcom-post-boot
     
 service atfwd /system/bin/ATFWD-daemon
     class late_start
@@ -965,7 +739,7 @@ on property:persist.data.ds_fmc_app.mode=1
 
 service ims_regmanager /system/bin/exe-ims-regmanagerprocessnative
     class late_start
-    group net_bt_admin inet radio wifi
+    group qcom_oncrpc net_bt_admin inet radio wifi
     disabled
 
 on property:persist.ims.regmanager.mode=1
@@ -1002,19 +776,28 @@ service profiler_daemon /system/bin/profiler_daemon
     group root
     disabled
 
-service sdcard /system/bin/sdcard /data/media /mnt/shell/emulated 1023 1023
-   class late_start
+# virtual sdcard daemon running as media_rw (1023)
+service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+    class late_start
+    oneshot
 
 service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1
     class late_start
-    
-service fuse_usbdisk /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/usbdisk /storage/usbdisk
-    class late_start
+    disabled
 
-# Binding fuse mount point to /storage/emulated/legacy
-on property:init.svc.sdcard=running
-    wait /mnt/shell/emulated/0
-    mount none /mnt/shell/emulated/0 /storage/emulated/legacy bind
+service fuse_usbdisk /system/bin/sdcard -u 1023 -g 1023 /mnt/media_rw/usbdisk /storage/usbdisk
+    class late_start
+    disabled
+
+on property:ro.fuse_sdcard=true
+    start sdcard
+
+# This will make sure that sdcard service starts as late_start.
+on nonencrypted
+    setprop ro.fuse_sdcard ${persist.fuse_sdcard}
+
+on property:vold.decrypt=trigger_restart_framework
+    setprop ro.fuse_sdcard ${persist.fuse_sdcard}
 
 service hcidump /system/bin/sh /system/etc/hcidump.sh
     user bluetooth
@@ -1024,6 +807,17 @@ service hcidump /system/bin/sh /system/etc/hcidump.sh
 
 service charger /charger
     class charger
+
+service hvdcp /system/bin/hvdcp
+    class core
+    user root
+    disabled
+
+on property:persist.usb.hvdcp.detect=true
+    start hvdcp
+
+on property:persist.usb.hvdcp.detect=false
+    stop hvdcp
 
 service ssr_diag /system/bin/ssr_diag
     class late_start
@@ -1041,15 +835,13 @@ on property:persist.sys.ssr.restart_level=*
     write /sys/bus/msm_subsys/devices/subsys1/restart_level related
     # wcnss
     write /sys/bus/msm_subsys/devices/subsys2/restart_level related
-# SSR max restart and history time set
-    write /sys/module/subsystem_restart/parameters/max_restarts 4
-#    write /sys/module/subsystem_restart/parameters/max_history_time 3600
 
 # Define fastmmi
 service fastmmi /system/bin/mmi
     user root
     group root
     disabled
+    oneshot
 
 service fastmmisrv /system/bin/sh /init.qcom.factory.sh
     user root
@@ -1058,22 +850,6 @@ service fastmmisrv /system/bin/sh /init.qcom.factory.sh
 
 on ffbm
     start fastmmisrv
-
-service hvdcp /system/bin/hvdcp
-    class core
-    user root
-    disabled
-
-on property:persist.usb.hvdcp.detect=true
-    start hvdcp
-
-on property:persist.usb.hvdcp.detect=false
-    stop hvdcp
-
-#service charger_monitor /system/bin/charger_monitor
-#    user system
-#    group system
-#    disabled
 
 service diag_mdlog_start /system/bin/diag_mdlog
     class late_start
@@ -1097,15 +873,6 @@ on property:persist.sys.qlogd=1
 on property:persist.sys.qlogd=0
     stop qlogd
 
-service rootagent /system/bin/sh /system/etc/init.qcom.rootagent.sh
-    disabled
-    oneshot
-on property:persist.sys.rootagent=1
-    start rootagent
-on property:persist.sys.rootagent=0
-    stop rootagent
-
-# FEATURE_PANTECH_WLAN, 20111018 thkim_wifi add for wifi ftm mode --> 
 # Pantech only, 2012-04-02, ymlee_p11019, On Auto test mode, 5G DPD enabled, added "oneshot" ++++
 service ftm_ptt /system/bin/ftm_ptt -d
     class late_start #FEATURE_SKY_DATA_ENCRYPTION 
@@ -1119,44 +886,31 @@ on property:ftm_ptt_start=1
 
 on property:ftm_ptt_start=0
     stop ftm_ptt
-# FEATURE_PANTECH_WLAN, 20111018 thkim_wifi add for wifi ftm mode <--
-
-# p15060
-#ifdef CONFIG_PANTECH_ERR_CRASH_LOGGING
-service lognoti /system/bin/lognoti
-    class skylog
-    disabled
-    oneshot
-on property:ssr.noti.start=*
-   start lognoti
-#endif
-    
-# 2010-12-04 octopusy [FEATURE_LGU_CP_MANAGER_DAEMON_INTERFACE]
-service cpmgrif /system/bin/cpmgrif
-    class main
-    user radio
-    group radio qcom_oncrpc shell
-# octopusy END
-
-# [FEATURE_SKY_CP_DM_LOG_STORE_TEMP_MEMORY]
-service dmmond /system/bin/dmmond
-    class main
-    user root
-    group radio shell
-# END
 
 service pam_server /system/bin/pam_server
     class main
 
-# [FEATURE_LGU_CP_UICC_SUPPORT_NFC]
+service cpmgrif /system/bin/cpmgrif
+    class main
+    user radio
+    group radio qcom_oncrpc shell
+
+service dmmond /system/bin/dmmond
+    class main
+    user root
+    group radio shell
+
 service skypd /system/bin/skypd
     class main
     user system
     group radio system shell
- # END
 
-# [FEATURE_LGU_CP_LTE_UPLUS_KNIGHT_WDIAG]
 service ukd /system/bin/ukd
+   class main
+   user root
+   group radio shell
+
+service phantomd /system/bin/phantomd
    class main
    user root
    group radio shell

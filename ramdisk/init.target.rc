@@ -37,25 +37,11 @@ on init
     # session is not exercised through RemoteDisplay in the android framework
     setprop persist.sys.wfd.virtual 0
 
-
 # import cne init file
 on post-fs
     export LD_PRELOAD /vendor/lib/libNimsWrap.so
 
 on fs
-    # jwheo 20120913 Remove system partition from fstab.qcom file and mount system here
-    #wait /dev/block/platform/msm_sdcc.1/by-name/system
-    #mount ext4 /dev/block/platform/msm_sdcc.1/by-name/system /system ro barrier=1,discard
-    # jwheo 20120913 check persist partition by mmcblk_utils and mount persist before mounting userdata partition
-    wait /dev/block/platform/msm_sdcc.1/by-name/persist
-    exec /system/bin/mmcblk_utils ext4 /dev/block/platform/msm_sdcc.1/by-name/persist
-    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/persist
-    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev barrier=1
-
-    # jwheo 20120913 check userdata partition by mmcblk_utils but mout userdata partition in fstab.qcom
-    wait /dev/block/platform/msm_sdcc.1/by-name/userdata
-    exec /system/bin/mmcblk_utils ext4 /dev/block/platform/msm_sdcc.1/by-name/userdata
-    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/userdata
 
     mount_all fstab.qcom
     
@@ -65,33 +51,31 @@ on fs
     # these partition flashed on the device. Failure to mount any partition in fstab file
     # results in failure to launch late-start class.
 
-    # wait /dev/block/platform/msm_sdcc.1/by-name/cache
-    # jwheo 20120913 check cache partition by mmcblk_utils
-    #exec /system/bin/mmcblk_utils ext4 /dev/block/platform/msm_sdcc.1/by-name/cache
-    #exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/cache
-    #mount ext4 /dev/block/platform/msm_sdcc.1/by-name/cache /cache nosuid nodev barrier=1
+    wait /dev/block/platform/msm_sdcc.1/by-name/persist
+    exec /system/bin/mmcblk_utils ext4 /dev/block/platform/msm_sdcc.1/by-name/persist
+    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/persist
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev barrier=1
 
-    # jwheo 20120913 mounting persist is above
-    # wait /dev/block/platform/msm_sdcc.1/by-name/persist
-    # mount ext4 /dev/block/platform/msm_sdcc.1/by-name/persist /persist nosuid nodev barrier=1
+    wait /dev/block/platform/msm_sdcc.1/by-name/userdata
+    exec /system/bin/mmcblk_utils ext4 /dev/block/platform/msm_sdcc.1/by-name/userdata
+    exec /system/bin/e2fsck -p /dev/block/platform/msm_sdcc.1/by-name/userdata
+
     wait /dev/block/platform/msm_sdcc.1/by-name/modem
     mount vfat /dev/block/platform/msm_sdcc.1/by-name/modem /firmware ro shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337
 
-    # jwheo 20120913 check log partition by mmcblk_utils
     wait /dev/block/platform/msm_sdcc.1/by-name/log
     exec /system/bin/mmcblk_utils fat16 /dev/block/platform/msm_sdcc.1/by-name/log
-    
+
 # for preload
     wait /dev/block/platform/msm_sdcc.1/by-name/preload
     mount ext4 /dev/block/platform/msm_sdcc.1/by-name/preload /preload nosuid nodev barrier=1
-    
-	chown system radio /dev/block/platform/msm_sdcc.1/by-name
+
+    chown system radio /dev/block/platform/msm_sdcc.1/by-name
     chmod 0775 /dev/block/platform/msm_sdcc.1/by-name
 
-    mount ext4 /dev/block/mmcblk0p15 /system remount rw barrier=1
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/system /system remount rw barrier=1
     exec /system/bin/sh /system/etc/init.qcom.modem_links.sh
-    mount ext4 /dev/block/mmcblk0p15 /system remount ro barrier=1
-    
+    mount ext4 /dev/block/platform/msm_sdcc.1/by-name/system /system remount ro barrier=1
     setprop qcom.audio.init complete
 
 on post-fs-data
@@ -103,10 +87,130 @@ on post-fs-data
 
 on boot
     start imsqmidaemon
-    insmod /system/lib/modules/adsprpc.ko
-# 20131220 p13795 modified for exFAT file system
-    chmod 0755 /system/lib/modules/texfat.ko
-    insmod /system/lib/modules/texfat.ko
+
+    # PANTECH_PMIC_MONITOR_TEST
+    chmod 0660 /dev/qcom,qpnp-charger
+    chown system radio /dev/qcom,qpnp-charger
+
+    # GPIO_KEYS
+    chmod 0660 /dev/gpio_keys_dev
+    chown system radio /dev/gpio_keys_dev
+
+    # GPIO_SWITCH
+    chmod 0660 /dev/gpio_switch_dev
+    chown system radio /dev/gpio_switch_dev
+
+    # FP_SENSOR
+    chmod 0660 /dev/fpc1080
+
+    # TM_CORERIVER
+    chmod 0660 /dev/tm_fops
+    chown system radio /dev/tm_fops
+    chmod 0660 /sys/class/leds/pan_tm_led/brightness
+    chown system radio /sys/class/leds/pan_tm_led/brightness
+
+    # Pantech Touch IO
+    chmod 0660 /dev/touch_monitor
+    chown system radio /dev/touch_monitor
+    chmod 0660 /dev/touch_fops
+    chown system radio /dev/touch_fops
+
+    # Pantech LED
+    chown system radio /sys/class/leds/led:rgb_red/brightness
+    chown system radio /sys/class/leds/led:rgb_red/blink
+    chown system radio /sys/class/leds/led:rgb_red/pan_blink
+    chown system radio /sys/class/leds/led:rgb_red/pan_brightness
+    chown system radio /sys/class/leds/led:rgb_red/pan_loop
+    chown system radio /sys/class/leds/led:rgb_red/pan_oneshot
+    chown system radio /sys/class/leds/led:rgb_red/pan_rainbow
+    chown system radio /sys/class/leds/led:rgb_red/pan_rgb_off
+
+    chown system radio /sys/class/leds/led:rgb_green/brightness
+    chown system radio /sys/class/leds/led:rgb_green/blink
+    chown system radio /sys/class/leds/led:rgb_green/pan_blink
+    chown system radio /sys/class/leds/led:rgb_green/pan_brightness
+    chown system radio /sys/class/leds/led:rgb_green/pan_loop
+    chown system radio /sys/class/leds/led:rgb_green/pan_oneshot
+    chown system radio /sys/class/leds/led:rgb_green/pan_rainbow
+    chown system radio /sys/class/leds/led:rgb_green/pan_rgb_off
+
+    chown system radio /sys/class/leds/led:rgb_blue/brightness
+    chown system radio /sys/class/leds/led:rgb_blue/blink
+    chown system radio /sys/class/leds/led:rgb_blue/pan_blink
+    chown system radio /sys/class/leds/led:rgb_blue/pan_brightness
+    chown system radio /sys/class/leds/led:rgb_blue/pan_loop
+    chown system radio /sys/class/leds/led:rgb_blue/pan_oneshot
+    chown system radio /sys/class/leds/led:rgb_blue/pan_rainbow
+    chown system radio /sys/class/leds/led:rgb_blue/pan_rgb_off
+
+    chown system system /sys/class/timed_output/vibrator/enable
+    chown system system /sys/class/timed_output/vibrator/vtg_level
+    chown system system /sys/class/leds/keyboard-backlight/brightness
+    chown system system /sys/class/leds/lcd-backlight/brightness
+    chown system system /sys/class/leds/button-backlight/brightness
+    chown system system /sys/class/leds/jogball-backlight/brightness
+    chown system system /sys/class/leds/red/brightness
+    chown system system /sys/class/leds/green/brightness
+    chown system system /sys/class/leds/blue/brightness
+    chown system system /sys/class/leds/red/device/grpfreq
+    chown system system /sys/class/leds/red/device/grppwm
+    chown system system /sys/class/leds/red/device/blink
+    chown system system /sys/class/timed_output/vibrator/enable
+    chown system system /sys/module/sco/parameters/disable_esco
+    chown system system /sys/kernel/ipv4/tcp_wmem_min
+    chown system system /sys/kernel/ipv4/tcp_wmem_def
+    chown system system /sys/kernel/ipv4/tcp_wmem_max
+    chown system system /sys/kernel/ipv4/tcp_rmem_min
+    chown system system /sys/kernel/ipv4/tcp_rmem_def
+    chown system system /sys/kernel/ipv4/tcp_rmem_max
+    chown root radio /proc/cmdline
+
+    # For FingerPrintSensor
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/btp_input_mode
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_ptr
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_y
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_key_clear
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_start
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_key_accel
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll_skip_frame
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_x
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_accel
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_accel
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_dispatch
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_enable
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_key
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_start
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_ptr_clear
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_ptr_accel
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/pxl_setup
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/offset
+    chmod 0660 /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/gain
+
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/btp_input_mode
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_ptr
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_y
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_key_clear
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_start
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_key_accel
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll_skip_frame
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_scroll
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_multiplier_x
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_accel
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_accel
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_key_dispatch
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/mouse_enable
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/p_sensitivity_key
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/threshold_ptr_start
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/duration_ptr_clear
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/nav_settings/multiplier_ptr_accel
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/pxl_setup
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/offset
+    chown system radio /sys/devices/f9964000.spi/spi_master/spi32766/spi32766.0/adc_setup/gain
+
+    # Made for common pantech folder
+    mkdir /dev/pantech 
+    chown system system /dev/pantech
 
 # Allow usb charging to be disabled persistently
 on property:persist.usb.chgdisabled=1
@@ -164,20 +268,10 @@ service qseecomd /system/bin/qseecomd
    user root
    group system
 
-service mpdecision /system/bin/mpdecision --avg_comp
-   user root
-   group system
-   disabled
-
 service qosmgrd /system/bin/qosmgr /system/etc/qosmgr_rules.xml
    user system
    group system
    disabled
-
-service thermal-engine /system/bin/thermal-engine
-   class main
-   user root
-   group radio system
 
 service security-check1 /sbin/security_boot_check system
     class core
