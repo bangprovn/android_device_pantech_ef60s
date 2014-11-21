@@ -40,7 +40,7 @@ TARGET_BOOTLOADER_BOARD_NAME := MSM8974
 
 TARGET_BOARD_INFO_FILE := device/pantech/ef60s/board-info.txt
 
-BOARD_KERNEL_CMDLINE 	:= console=NULL,115200,n8 androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 vmalloc=260M loglevel=0
+BOARD_KERNEL_CMDLINE 	:= console=NULL,115200,n8 androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 vmalloc=260M loglevel=0 androidboot.selinux=permissive
 
 BOARD_KERNEL_BASE 		:= 0x00000000
 BOARD_KERNEL_PAGESIZE 	:= 2048
