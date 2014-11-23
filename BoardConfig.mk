@@ -63,7 +63,7 @@ BOARD_CUSTOM_BOOTIMG_MK := device/pantech/ef60s/mkbootimg.mk
 TARGET_OTA_ASSERT_DEVICE := A900L,A900S,A900K,IM-A900L,IM-A900K,IM-A900S,ef60s,ef61k,ef62l
 
 #RIL
-BOARD_RIL_CLASS := ../../../device/pantech/ef60s/ril/
+#BOARD_RIL_CLASS := ../../../device/pantech/ef60s/ril/
 
 # Init
 TARGET_NO_INITLOGO := true
